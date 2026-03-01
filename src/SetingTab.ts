@@ -132,7 +132,10 @@ export class SettingTab extends PluginSettingTab {
         // 기본 Provider 선택
         this.displayDefaultProviderSection(containerEl)
 
-        // 커스텀 모델 설정
+        // 커스텀 모델 설정 (Provider)
+        this.displayCustomProvidersSection(containerEl)
+
+        // 레거시 커스텀 모델명 (선택사항)
         this.displayCustomModelSection(containerEl)
 
         // 클리핑 기본 설정
@@ -283,15 +286,28 @@ export class SettingTab extends PluginSettingTab {
     private displayDefaultProviderSection(containerEl: HTMLElement): void {
         containerEl.createEl('h3', { text: '🎯 기본 AI Provider 선택' })
 
-        const configuredProviders = (Object.keys(AI_PROVIDERS) as AIProviderType[]).filter(
-            (id) => this.plugin.settings.ai.apiKeys[id] && this.plugin.settings.ai.apiKeys[id]!.trim().length > 0
+        let configuredProviders: string[] = (Object.keys(AI_PROVIDERS) as AIProviderType[]).filter(
+            (id) => id !== 'custom' && this.plugin.settings.ai.apiKeys[id] && this.plugin.settings.ai.apiKeys[id]!.trim().length > 0
         )
+
+        // Add custom providers logic
+        const customModels = this.plugin.settings.ai.customApiModels || []
+        if (customModels.length > 0) {
+            configuredProviders = [...configuredProviders, ...customModels.map(m => `custom-${m.id}`)]
+        }
 
         // 설정된 Provider 목록 표시
         if (configuredProviders.length > 0) {
             const statusEl = containerEl.createEl('div', { cls: 'setting-item-description' })
             statusEl.style.cssText = 'margin-bottom: 12px; padding: 8px 12px; background: var(--background-modifier-success); border-radius: 6px; color: var(--text-success);'
-            statusEl.innerHTML = `✅ <strong>${configuredProviders.length}개</strong>의 Provider가 설정되어 있습니다: ${configuredProviders.map(id => AI_PROVIDERS[id].displayName).join(', ')}`
+            statusEl.innerHTML = `✅ <strong>${configuredProviders.length}개</strong>의 Provider가 설정되어 있습니다: ${configuredProviders.map(id => {
+                if (id.startsWith('custom-')) {
+                    const customId = id.replace('custom-', '');
+                    const customModel = this.plugin.settings.ai.customApiModels?.find(m => m.id === customId);
+                    return `커스텀: ${customModel?.name || customId}`;
+                }
+                return AI_PROVIDERS[id as AIProviderType]?.displayName || id;
+            }).join(', ')}`
         } else {
             const statusEl = containerEl.createEl('div', { cls: 'setting-item-description' })
             statusEl.style.cssText = 'margin-bottom: 12px; padding: 8px 12px; background: var(--background-modifier-error); border-radius: 6px; color: var(--text-error);'
@@ -308,38 +324,200 @@ export class SettingTab extends PluginSettingTab {
                     dropdown.setDisabled(true)
                 } else {
                     for (const providerId of configuredProviders) {
-                        const config = AI_PROVIDERS[providerId]
-                        dropdown.addOption(providerId, `${config.displayName} (${this.plugin.settings.ai.models[providerId]})`)
+                        if (providerId.startsWith('custom-')) {
+                            const targetId = providerId.replace('custom-', '')
+                            const customModel = customModels.find(m => m.id === targetId)
+                            if (customModel) {
+                                dropdown.addOption(providerId, `🔌 커스텀: ${customModel.name} (${customModel.modelId})`)
+                            }
+                        } else {
+                            const pId = providerId as AIProviderType
+                            const config = AI_PROVIDERS[pId]
+                            dropdown.addOption(pId, `${config.displayName} (${this.plugin.settings.ai.models[pId]})`)
+                        }
                     }
 
                     // 현재 선택된 Provider가 configuredProviders에 있으면 설정
-                    if (configuredProviders.includes(this.plugin.settings.ai.provider)) {
-                        dropdown.setValue(this.plugin.settings.ai.provider)
+                    const currentSelected = this.plugin.settings.ai.provider === 'custom'
+                        ? `custom-${this.plugin.settings.ai.customModel}`
+                        : this.plugin.settings.ai.provider;
+
+                    if (configuredProviders.includes(currentSelected)) {
+                        dropdown.setValue(currentSelected)
                     } else {
                         // 없으면 첫 번째 Provider로 자동 설정
-                        this.plugin.settings.ai.provider = configuredProviders[0]
-                        dropdown.setValue(configuredProviders[0])
+                        const first = configuredProviders[0]
+                        dropdown.setValue(first)
+                        if (first.startsWith('custom-')) {
+                            this.plugin.settings.ai.provider = 'custom'
+                            this.plugin.settings.ai.customModel = first.replace('custom-', '')
+                        } else {
+                            this.plugin.settings.ai.provider = first as AIProviderType
+                        }
                         this.plugin.saveSettings()
                     }
 
                     dropdown.onChange(async (value) => {
-                        this.plugin.settings.ai.provider = value as AIProviderType
-                        await this.plugin.saveSettings()
-                        new Notice(`✅ ${AI_PROVIDERS[value as AIProviderType].displayName}가 기본 Provider로 설정되었습니다.`)
+                        if (value.startsWith('custom-')) {
+                            this.plugin.settings.ai.provider = 'custom'
+                            this.plugin.settings.ai.customModel = value.replace('custom-', '')
+                            await this.plugin.saveSettings()
+                            const cm = customModels.find(m => m.id === this.plugin.settings.ai.customModel)
+                            new Notice(`✅ 커스텀 모델 '${cm?.name}'가 기본 Provider로 설정되었습니다.`)
+                        } else {
+                            this.plugin.settings.ai.provider = value as AIProviderType
+                            await this.plugin.saveSettings()
+                            new Notice(`✅ ${AI_PROVIDERS[value as AIProviderType].displayName}가 기본 Provider로 설정되었습니다.`)
+                        }
                     })
                 }
             })
     }
+    /**
+     * 커스텀 API 프로바이더 관리
+     */
+    private displayCustomProvidersSection(containerEl: HTMLElement): void {
+        containerEl.createEl('h3', { text: '🔌 커스텀 API 모델 관리 (OpenAI 호환)' })
+
+        const infoEl = containerEl.createEl('div', { cls: 'setting-item-description' })
+        infoEl.style.cssText = 'margin-bottom: 16px; padding: 12px; background: var(--background-secondary); border-radius: 8px;'
+        infoEl.innerHTML = `
+            <p style="margin: 0 0 8px 0;"><strong>📌 로컬 및 커스텀 모델 사용 방법:</strong></p>
+            <ol style="margin: 0; padding-left: 20px;">
+                <li>LM Studio, Ollama, OpenRouter 등 <strong>OpenAI API 호환</strong> 엔드포인트를 등록할 수 있습니다.</li>
+                <li><strong>Base URL</strong>은 <code>http://localhost:1234/v1</code>과 같이 <code>/v1</code>로 끝나야 합니다. (<code>/chat/completions</code>는 제외)</li>
+                <li>등록 후 위 "기본 AI Provider 선택"에서 지정해 사용할 수 있습니다.</li>
+            </ol>
+        `
+
+        if (!this.plugin.settings.ai.customApiModels) {
+            this.plugin.settings.ai.customApiModels = []
+        }
+
+        const customModelsContainer = containerEl.createDiv('custom-api-models-container')
+
+        for (let i = 0; i < this.plugin.settings.ai.customApiModels.length; i++) {
+            const model = this.plugin.settings.ai.customApiModels[i]
+
+            const modelSetting = new Setting(customModelsContainer)
+                .setName(`🔌 ${model.name}`)
+                .setDesc(`모델 ID: ${model.modelId} | URL: ${model.baseUrl}`)
+
+            modelSetting.addButton((button) => {
+                button
+                    .setButtonText('테스트')
+                    .onClick(async () => {
+                        button.setButtonText('테스트 중...')
+                        button.setDisabled(true)
+
+                        const aiService = getAIService()
+                        if (aiService) {
+                            const result = await aiService.testApiKey('custom', model.apiKey, model.baseUrl, model.modelId)
+                            if (result.success) {
+                                new Notice(`✅ ${model.name} 연결 성공!`)
+                            } else {
+                                new Notice(`❌ ${model.name} 연결 실패: ${result.error}`)
+                            }
+                        }
+
+                        button.setButtonText('테스트')
+                        button.setDisabled(false)
+                    })
+            })
+
+            modelSetting.addExtraButton((button) => {
+                button
+                    .setIcon('trash')
+                    .setTooltip('삭제')
+                    .onClick(async () => {
+                        if (confirm(`'${model.name}' 커스텀 모델을 삭제하시겠습니까?`)) {
+                            this.plugin.settings.ai.customApiModels.splice(i, 1)
+
+                            // If this was the currently active custom model, reset
+                            if (this.plugin.settings.ai.provider === 'custom' && this.plugin.settings.ai.customModel === model.id) {
+                                this.plugin.settings.ai.provider = 'gemini'
+                                this.plugin.settings.ai.customModel = ''
+                            }
+
+                            await this.plugin.saveSettings()
+                            this.display()
+                        }
+                    })
+            })
+        }
+
+        // 새 커스텀 모델 추가 영역
+        const addContainer = customModelsContainer.createDiv('add-custom-model-container')
+        addContainer.style.cssText = 'margin-top: 16px; padding: 16px; border: 1px solid var(--background-modifier-border); border-radius: 8px;'
+
+        addContainer.createEl('h4', { text: '새 모델 추가', cls: 'setting-item-name' }).style.marginTop = '0'
+
+        let newName = ''
+        let newModelId = ''
+        let newBaseUrl = ''
+        let newApiKey = ''
+
+        new Setting(addContainer)
+            .setName('표시 이름')
+            .setDesc('설정에서 구분하기 위한 이름 (예: Local Llama3)')
+            .addText(text => text.setPlaceholder('이름 입력...').onChange(v => newName = v.trim()))
+
+        new Setting(addContainer)
+            .setName('모델 ID')
+            .setDesc('API 호출 시 사용될 실제 모델명 (예: llama-3, qwen-2.5)')
+            .addText(text => text.setPlaceholder('모델 ID 입력...').onChange(v => newModelId = v.trim()))
+
+        new Setting(addContainer)
+            .setName('Base URL (Endpoint)')
+            .setDesc('API 주소 (예: http://localhost:1234/v1)')
+            .addText(text => {
+                text.inputEl.style.width = '250px'
+                text.setPlaceholder('URL 입력...').onChange(v => newBaseUrl = v.trim())
+            })
+
+        new Setting(addContainer)
+            .setName('API Key (선택)')
+            .setDesc('필요한 경우 입력하세요 (로컬 모델은 보통 불필요)')
+            .addText(text => {
+                text.inputEl.type = 'password'
+                text.setPlaceholder('API 키 입력...').onChange(v => newApiKey = v.trim())
+            })
+
+        new Setting(addContainer)
+            .addButton(button => {
+                button
+                    .setButtonText('+ 추가하기')
+                    .setCta()
+                    .onClick(async () => {
+                        if (!newName || !newModelId || !newBaseUrl) {
+                            new Notice('⚠️ 이름, 모델 ID, Base URL을 기입해주세요.')
+                            return
+                        }
+
+                        this.plugin.settings.ai.customApiModels.push({
+                            id: `custom-${Date.now()}`,
+                            name: newName,
+                            modelId: newModelId,
+                            baseUrl: newBaseUrl.replace(/\/$/, ""),
+                            apiKey: newApiKey
+                        })
+
+                        await this.plugin.saveSettings()
+                        new Notice(`✅ 커스텀 모델 '${newName}'이 추가되었습니다.`)
+                        this.display()
+                    })
+            })
+    }
 
     /**
-     * 커스텀 모델 설정
+     * 커스텀 모델 설정 (레거시/오버라이드)
      */
     private displayCustomModelSection(containerEl: HTMLElement): void {
-        containerEl.createEl('h3', { text: '⚙️ 커스텀 모델 설정 (선택사항)' })
+        containerEl.createEl('h3', { text: '⚙️ 기본 Provider 모델 오버라이드 (선택사항)' })
 
         new Setting(containerEl)
-            .setName('커스텀 모델명 사용')
-            .setDesc('기본 Provider의 모델명을 직접 지정합니다.')
+            .setName('직접 모델명 입력')
+            .setDesc('선택한 Provider가 지원하는 다른 모델명을 수동으로 지정합니다.')
             .addToggle((toggle) => {
                 toggle.setValue(this.plugin.settings.ai.useCustomModel)
                 toggle.onChange(async (value) => {
@@ -351,15 +529,23 @@ export class SettingTab extends PluginSettingTab {
 
         if (this.plugin.settings.ai.useCustomModel) {
             new Setting(containerEl)
-                .setName('커스텀 모델명')
-                .setDesc(`현재 Provider: ${AI_PROVIDERS[this.plugin.settings.ai.provider].displayName}`)
+                .setName('추가 모델명')
+                .setDesc(`현재 지정된 Provider: ${this.plugin.settings.ai.provider}`)
                 .addText((text) => {
                     text.setPlaceholder('모델명 입력...')
-                    text.setValue(this.plugin.settings.ai.customModel)
-                    text.onChange(async (value) => {
-                        this.plugin.settings.ai.customModel = value
-                        await this.plugin.saveSettings()
-                    })
+                    // Here `customModel` serves double duty; for normal providers, it overrides model name.
+                    // For the new 'custom' provider type, it now holds the ID of the CustomAPIModel.
+                    // If the user selected 'custom' provider, we should ideally disable this or explain.
+                    if (this.plugin.settings.ai.provider === 'custom') {
+                        text.setDisabled(true)
+                        text.setPlaceholder('커스텀 API 모델은 위젯에서 직접 관리됩니다.')
+                    } else {
+                        text.setValue(this.plugin.settings.ai.customModel)
+                        text.onChange(async (value) => {
+                            this.plugin.settings.ai.customModel = value
+                            await this.plugin.saveSettings()
+                        })
+                    }
                 })
         }
     }

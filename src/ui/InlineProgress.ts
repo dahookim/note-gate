@@ -42,7 +42,7 @@ export class InlineProgress {
     show(): void {
         this.hide() // 기존 제거
 
-        this.element = this.container.createDiv({ cls: 'easy-gate-inline-progress' })
+        this.element = this.container.createDiv({ cls: 'note-gate-inline-progress' })
         this.element.style.cssText = `
             display: flex;
             flex-direction: ${this.compact ? 'row' : 'column'};

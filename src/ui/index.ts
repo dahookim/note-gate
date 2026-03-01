@@ -1,7 +1,7 @@
 /**
  * UI Module Index
  *
- * Easy Gate UI 컴포넌트의 메인 진입점입니다.
+ * Note Gate UI 컴포넌트의 메인 진입점입니다.
  */
 
 // Toast Notification

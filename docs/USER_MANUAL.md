@@ -1,4 +1,4 @@
-# Easy Gate - 사용자 매뉴얼
+# Note Gate - 사용자 매뉴얼
 
 > **버전**: 2.0.4
 > **최종 업데이트**: 2025년 12월
@@ -17,7 +17,7 @@
 
 ## 소개
 
-**Easy Gate**는 옵시디언에서 웹사이트를 임베드하고, AI를 활용하여 웹 콘텐츠를 분석하고 저장할 수 있는 강력한 플러그인입니다.
+**Note Gate**는 옵시디언에서 웹사이트를 임베드하고, AI를 활용하여 웹 콘텐츠를 분석하고 저장할 수 있는 강력한 플러그인입니다.
 
 ### 주요 기능
 
@@ -34,7 +34,7 @@
 
 1. 옵시디언 설정 (⚙️) 열기
 2. **커뮤니티 플러그인** → **찾아보기** 클릭
-3. "Easy Gate" 검색
+3. "Note Gate" 검색
 4. **설치** 버튼 클릭
 5. **활성화** 버튼 클릭
 
@@ -42,7 +42,7 @@
 
 1. GitHub에서 최신 릴리즈 다운로드
 2. `main.js`, `manifest.json`, `styles.css` 파일을
-   `YOUR_VAULT/.obsidian/plugins/easy-gate/` 폴더에 복사
+   `YOUR_VAULT/.obsidian/plugins/note-gate/` 폴더에 복사
 3. 옵시디언 재시작
 4. 설정에서 플러그인 활성화
 
@@ -53,7 +53,7 @@
 ### Gate(게이트) 생성하기
 
 1. 좌측 리본에서 **지구본 아이콘** 클릭
-2. 또는 명령어 팔레트 (Ctrl/Cmd + P) → "Easy Gate: Open Gate Manager"
+2. 또는 명령어 팔레트 (Ctrl/Cmd + P) → "Note Gate: Open Gate Manager"
 3. URL 입력 후 Enter
 
 ### 탭 관리
@@ -147,7 +147,7 @@ provider: openai
 template: basic-summary
 tags:
   - ai-analysis
-  - easy-gate
+  - note-gate
 ---
 ```
 
@@ -158,7 +158,7 @@ tags:
 ### 플러그인 설정 열기
 
 1. 옵시디언 설정 (⚙️) 열기
-2. 좌측 메뉴에서 **Easy Gate** 클릭
+2. 좌측 메뉴에서 **Note Gate** 클릭
 
 ### 저장 설정 (Clipping Settings)
 
@@ -211,7 +211,7 @@ tags:
 
 ### Q: YAML Properties가 생성되지 않아요.
 
-**A**: Easy Gate v2.0.4 이상에서는 모든 저장 및 AI 분석 노트에 YAML frontmatter가 자동 포함됩니다. 이전 버전을 사용 중이라면 업데이트해주세요.
+**A**: Note Gate v2.0.4 이상에서는 모든 저장 및 AI 분석 노트에 YAML frontmatter가 자동 포함됩니다. 이전 버전을 사용 중이라면 업데이트해주세요.
 
 ### Q: 특정 웹사이트가 로드되지 않아요.
 
@@ -262,4 +262,4 @@ tags:
 
 ---
 
-**Easy Gate** - 옵시디언에서 더 스마트하게 웹을 탐색하세요.
+**Note Gate** - 옵시디언에서 더 스마트하게 웹을 탐색하세요.

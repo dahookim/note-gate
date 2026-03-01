@@ -83,7 +83,7 @@ export default class OpenGatePlugin extends Plugin {
     private registerCommands() {
         this.addCommand({
             id: `open-gate-create-new`,
-            name: `Easy Gate: Create new`,
+            name: `Note Gate: Create new`,
             callback: async () => {
                 new ModalEditGate(this.app, createEmptyGateOption(), async (gate: GateFrameOption) => {
                     await this.addGate(gate)
@@ -93,7 +93,7 @@ export default class OpenGatePlugin extends Plugin {
 
         this.addCommand({
             id: `open-list-gates-modal`,
-            name: `Easy Gate: List all`,
+            name: `Note Gate: List all`,
             hotkeys: [{ modifiers: ['Mod', 'Shift'], key: 'g' }],
             callback: async () => {
                 new ModalListGates(this.app, this.settings.gates, async (gate: GateFrameOption) => {

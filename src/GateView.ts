@@ -289,7 +289,7 @@ provider: ${this.plugin.settings.ai.provider}
 site: "${content.siteName || ''}"
 tags:
   - ai-summary
-  - easy-gate
+  - note-gate
 ---
 
 # ${content.title || 'AI 요약'}
@@ -436,7 +436,7 @@ site: "${content.siteName || ''}"
 prompt: "${prompt.replace(/"/g, '\\"').substring(0, 100)}..."
 tags:
   - ai-analysis
-  - easy-gate
+  - note-gate
   - custom-prompt
 ---
 
@@ -870,7 +870,7 @@ ${result}
 ${sourceRefs}
 
 ---
-*이 분석은 Easy Gate 멀티 소스 분석 기능으로 생성되었습니다.*
+*이 분석은 Note Gate 멀티 소스 분석 기능으로 생성되었습니다.*
 `
 
             const title = `멀티소스_${analysisTypeNames[request.analysisType]}_${new Date().toISOString().split('T')[0]}`
@@ -1275,7 +1275,7 @@ clipped: ${fullDateTime}
 type: web-clip
 tags:
   - web-clip
-  - easy-gate
+  - note-gate
 ---
 
 `;

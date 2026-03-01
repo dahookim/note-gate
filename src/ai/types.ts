@@ -1,5 +1,5 @@
 /**
- * AI Feature Types for Easy Gate v2.0
+ * AI Feature Types for Note Gate v2.0
  *
  * 이 파일은 AI 기능에 필요한 모든 타입 정의를 포함합니다.
  */
@@ -8,7 +8,7 @@
 // AI Provider Types
 // ============================================
 
-export type AIProviderType = 'gemini' | 'grok' | 'claude' | 'openai' | 'glm'
+export type AIProviderType = 'gemini' | 'grok' | 'claude' | 'openai' | 'glm' | 'custom'
 
 export interface AIProviderConfig {
     id: AIProviderType
@@ -56,7 +56,26 @@ export const AI_PROVIDERS: Record<AIProviderType, AIProviderConfig> = {
         displayName: 'GLM',
         defaultModel: 'glm-4.6',
         endpoint: 'https://open.bigmodel.cn/api/paas/v4'
+    },
+    custom: {
+        id: 'custom',
+        name: 'Custom (OpenAI Compatible)',
+        displayName: 'Custom Provider',
+        defaultModel: 'custom-model',
+        endpoint: ''
     }
+}
+
+// ============================================
+// Custom API Model Types
+// ============================================
+
+export interface CustomAPIModel {
+    id: string
+    name: string
+    modelId: string
+    baseUrl: string
+    apiKey: string
 }
 
 // ============================================
@@ -74,6 +93,7 @@ export interface AISettings {
     autoTags: boolean
     aiNotesFolder: string // AI 생성 노트 저장 폴더
     autoOpenNote: boolean // 노트 생성 후 자동으로 열기
+    customApiModels: CustomAPIModel[] // 커스텀 API 모델 목록
 }
 
 export const DEFAULT_AI_SETTINGS: AISettings = {
@@ -84,7 +104,8 @@ export const DEFAULT_AI_SETTINGS: AISettings = {
         grok: 'grok-4-1-fast',
         claude: 'claude-sonnet-4-5-20241022',
         openai: 'gpt-5',
-        glm: 'glm-4.6'
+        glm: 'glm-4.6',
+        custom: ''
     },
     useCustomModel: false,
     customModel: '',
@@ -92,7 +113,8 @@ export const DEFAULT_AI_SETTINGS: AISettings = {
     defaultTemplate: 'basic-summary',
     autoTags: true,
     aiNotesFolder: 'AI-Notes', // 기본 AI 노트 폴더
-    autoOpenNote: true // 기본값: 노트 생성 후 자동 열기
+    autoOpenNote: true, // 기본값: 노트 생성 후 자동 열기
+    customApiModels: []
 }
 
 // ============================================

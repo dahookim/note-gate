@@ -57,7 +57,7 @@ export class ToastNotification {
 
         // 스타일 적용
         this.element.empty()
-        this.element.addClass('easy-gate-toast')
+        this.element.addClass('note-gate-toast')
         this.element.style.cssText = `
             display: flex;
             align-items: center;

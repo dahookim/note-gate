@@ -98,7 +98,7 @@ div[data-gate-id] .setting-item-name {
     text-overflow: ellipsis;
 }
 
-/* --- Easy Gate New Styles --- */
+/* --- Note Gate New Styles --- */
 
 .gate-top-bar {
     background-color: var(--background-secondary);
@@ -228,16 +228,16 @@ div[data-gate-id] .setting-item-name {
 }
 
 /* AI & Clip Button Styles */
-.easy-gate-clip-btn-wrapper,
-.easy-gate-ai-btn-wrapper {
+.note-gate-clip-btn-wrapper,
+.note-gate-ai-btn-wrapper {
     flex-shrink: 0 !important;
     display: inline-flex !important;
     align-items: center;
     gap: 0;
 }
 
-.easy-gate-clip-btn,
-.easy-gate-ai-btn {
+.note-gate-clip-btn,
+.note-gate-ai-btn {
     height: 26px !important;
     padding: 0 8px !important;
     font-size: 14px !important;
@@ -249,8 +249,8 @@ div[data-gate-id] .setting-item-name {
     transition: background 0.2s;
 }
 
-.easy-gate-clip-dropdown-btn,
-.easy-gate-ai-dropdown-btn {
+.note-gate-clip-dropdown-btn,
+.note-gate-ai-dropdown-btn {
     height: 26px !important;
     padding: 0 5px !important;
     font-size: 9px !important;
@@ -261,10 +261,10 @@ div[data-gate-id] .setting-item-name {
     transition: background 0.2s;
 }
 
-.easy-gate-clip-btn:hover,
-.easy-gate-ai-btn:hover,
-.easy-gate-clip-dropdown-btn:hover,
-.easy-gate-ai-dropdown-btn:hover {
+.note-gate-clip-btn:hover,
+.note-gate-ai-btn:hover,
+.note-gate-clip-dropdown-btn:hover,
+.note-gate-ai-dropdown-btn:hover {
     background: var(--interactive-hover);
 }
 

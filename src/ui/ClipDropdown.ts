@@ -213,10 +213,10 @@ export function createClipButton(
     dropdown: ClipDropdown,
     onQuickClip: () => void
 ): HTMLElement {
-    const wrapper = container.createDiv({ cls: 'easy-gate-clip-btn-wrapper' })
+    const wrapper = container.createDiv({ cls: 'note-gate-clip-btn-wrapper' })
 
     // 메인 클립 버튼 (원클릭)
-    const mainBtn = wrapper.createEl('button', { cls: 'easy-gate-clip-btn' })
+    const mainBtn = wrapper.createEl('button', { cls: 'note-gate-clip-btn' })
     mainBtn.textContent = '📥'
     mainBtn.title = '저장 (클릭: 전체 페이지 저장)'
     mainBtn.onclick = (e) => {
@@ -225,7 +225,7 @@ export function createClipButton(
     }
 
     // 드롭다운 버튼
-    const dropdownBtn = wrapper.createEl('button', { cls: 'easy-gate-clip-dropdown-btn' })
+    const dropdownBtn = wrapper.createEl('button', { cls: 'note-gate-clip-dropdown-btn' })
     dropdownBtn.textContent = '▼'
     dropdownBtn.title = '저장 옵션 더보기'
     dropdownBtn.onclick = (e) => {

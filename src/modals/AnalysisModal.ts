@@ -187,7 +187,7 @@ export class AnalysisModal extends Modal {
     onOpen(): void {
         const { contentEl } = this
         contentEl.empty()
-        contentEl.addClass('easy-gate-analysis-modal')
+        contentEl.addClass('note-gate-analysis-modal')
 
         // 모달 스타일
         this.modalEl.style.width = '700px'

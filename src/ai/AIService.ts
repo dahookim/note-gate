@@ -21,6 +21,7 @@ import { GrokProvider } from './providers/GrokProvider'
 import { ClaudeProvider } from './providers/ClaudeProvider'
 import { OpenAIProvider } from './providers/OpenAIProvider'
 import { GLMProvider } from './providers/GLMProvider'
+import { CustomProvider } from './providers/CustomProvider'
 
 export class AIService {
     private providers: Map<AIProviderType, AIProvider> = new Map()
@@ -40,6 +41,17 @@ export class AIService {
         this.providers.set('claude', new ClaudeProvider())
         this.providers.set('openai', new OpenAIProvider())
         this.providers.set('glm', new GLMProvider())
+
+        // Initialize custom providers dynamically
+        if (this.settings.customApiModels) {
+            for (const customModel of this.settings.customApiModels) {
+                // Ensure unique provider IDs for each custom model by keeping 'custom' as base,
+                // but registering to a dynamically created provider ID if needed, 
+                // OR since 'custom' is a single fallback provider ID in note-gate Settings,
+                // we'll register the 'custom' provider dynamically as the "currently active custom model".
+                // We'll defer fetching the active custom API model to `getCurrentProvider` logic.
+            }
+        }
     }
 
     /**
@@ -53,14 +65,32 @@ export class AIService {
      * 현재 선택된 프로바이더 가져오기
      */
     getCurrentProvider(): AIProvider | undefined {
+        // If the selected provider is 'custom', we need to dynamically locate the configuration
+        // assigned for it. Since there can be multiple custom models, but 'custom' acts as a single toggle,
+        // we'll create the instance dynamically based on the current default custom model settings.
+        if (this.settings.provider === 'custom') {
+            const defaultCustomModel = this.settings.customApiModels?.find(m => m.id === this.settings.customModel) || this.settings.customApiModels?.[0]
+            if (defaultCustomModel) {
+                return new CustomProvider(defaultCustomModel.baseUrl, defaultCustomModel.modelId, defaultCustomModel.apiKey)
+            }
+        }
+
         return this.providers.get(this.settings.provider)
     }
 
     /**
      * 특정 프로바이더 가져오기
      */
-    getProvider(providerId: AIProviderType): AIProvider | undefined {
-        return this.providers.get(providerId)
+    getProvider(providerId: AIProviderType | string): AIProvider | undefined {
+        if (providerId === 'custom' || providerId.startsWith('custom-')) {
+            // Find by exact id if provided, else use the default
+            const targetId = providerId.replace('custom-', '');
+            const modelConfig = this.settings.customApiModels?.find(m => m.id === targetId || m.id === providerId) || this.settings.customApiModels?.[0]
+            if (modelConfig) {
+                return new CustomProvider(modelConfig.baseUrl, modelConfig.modelId, modelConfig.apiKey)
+            }
+        }
+        return this.providers.get(providerId as AIProviderType)
     }
 
     /**
@@ -83,6 +113,9 @@ export class AIService {
      * 특정 프로바이더의 API 키가 설정되어 있는지 확인
      */
     isProviderConfigured(providerId: AIProviderType): boolean {
+        if (providerId === 'custom') {
+            return (this.settings.customApiModels && this.settings.customApiModels.length > 0)
+        }
         const apiKey = this.settings.apiKeys[providerId]
         return !!apiKey && apiKey.trim().length > 0
     }
@@ -100,15 +133,21 @@ export class AIService {
     /**
      * API 키 테스트
      */
-    async testApiKey(providerId: AIProviderType, apiKey: string): Promise<{ success: boolean; error?: string }> {
-        const provider = this.providers.get(providerId)
+    async testApiKey(providerId: AIProviderType, apiKey: string, optionalCustomBaseUrl?: string, optionalCustomModelId?: string): Promise<{ success: boolean; error?: string }> {
+        let provider = this.getProvider(providerId)
+
+        // Specific override for testing a custom model before it is "saved"
+        if (providerId === 'custom' && optionalCustomBaseUrl && optionalCustomModelId) {
+            provider = new CustomProvider(optionalCustomBaseUrl, optionalCustomModelId, apiKey)
+        }
+
         if (!provider) {
             return { success: false, error: 'Provider not found' }
         }
 
         try {
             const isValid = await provider.testApiKey(apiKey)
-            return { success: isValid, error: isValid ? undefined : 'Invalid API key' }
+            return { success: isValid, error: isValid ? undefined : 'Invalid API key or Endpoint' }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error'
             return { success: false, error: errorMessage }
@@ -131,12 +170,17 @@ export class AIService {
             }
         }
 
-        const apiKey = this.settings.apiKeys[this.settings.provider]
-        if (!apiKey) {
-            return {
-                success: false,
-                content: '',
-                error: `API key not configured for ${provider.name}`
+        let apiKey = this.settings.apiKeys[this.settings.provider]
+        if (this.settings.provider === 'custom') {
+            const cm = this.settings.customApiModels?.find(m => m.id === this.settings.customModel) || this.settings.customApiModels?.[0]
+            apiKey = cm ? cm.apiKey : ''
+        } else {
+            if (!apiKey) {
+                return {
+                    success: false,
+                    content: '',
+                    error: `API key not configured for ${provider.name}`
+                }
             }
         }
 
@@ -175,12 +219,18 @@ export class AIService {
             }
         }
 
-        const apiKey = this.settings.apiKeys[providerId]
-        if (!apiKey) {
-            return {
-                success: false,
-                content: '',
-                error: `API key not configured for ${provider.name}`
+        let apiKey = this.settings.apiKeys[providerId]
+        if (providerId === 'custom' || providerId.startsWith('custom-')) {
+            const targetId = providerId.replace('custom-', '')
+            const cm = this.settings.customApiModels?.find(m => m.id === targetId || m.id === providerId) || this.settings.customApiModels?.[0]
+            apiKey = cm ? cm.apiKey : ''
+        } else {
+            if (!apiKey) {
+                return {
+                    success: false,
+                    content: '',
+                    error: `API key not configured for ${provider.name}`
+                }
             }
         }
 

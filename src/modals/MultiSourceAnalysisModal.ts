@@ -101,7 +101,7 @@ class TextInputModal extends Modal {
     onOpen(): void {
         const { contentEl } = this
         contentEl.empty()
-        contentEl.addClass('easy-gate-text-input-modal')
+        contentEl.addClass('note-gate-text-input-modal')
 
         contentEl.createEl('h2', { text: '✏️ 텍스트 직접 입력' })
 
@@ -219,7 +219,7 @@ export class MultiSourceAnalysisModal extends Modal {
     onOpen(): void {
         const { contentEl } = this
         contentEl.empty()
-        contentEl.addClass('easy-gate-multi-source-modal')
+        contentEl.addClass('note-gate-multi-source-modal')
 
         // 모달 스타일
         this.modalEl.style.width = '700px'

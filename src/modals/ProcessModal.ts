@@ -60,7 +60,7 @@ export class ProcessModal extends Modal {
     onOpen(): void {
         const { contentEl } = this
         contentEl.empty()
-        contentEl.addClass('easy-gate-process-modal')
+        contentEl.addClass('note-gate-process-modal')
 
         // Initialize render component
         this.renderComponent.load()
@@ -567,7 +567,7 @@ provider: ${this.config.provider}
 template: ${this.config.templateId || 'custom'}
 tags:
   - ai-analysis
-  - easy-gate
+  - note-gate
 ---
 
 # ${this.clipData.title}

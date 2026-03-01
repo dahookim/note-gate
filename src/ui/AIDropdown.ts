@@ -231,10 +231,10 @@ export function createAIButton(
     onOpenAnalysisModal: () => void,
     hasApiKey: boolean
 ): HTMLElement {
-    const wrapper = container.createDiv({ cls: 'easy-gate-ai-btn-wrapper' })
+    const wrapper = container.createDiv({ cls: 'note-gate-ai-btn-wrapper' })
 
     // 메인 AI 버튼 (클릭시 분석 모달 열기)
-    const mainBtn = wrapper.createEl('button', { cls: 'easy-gate-ai-btn' })
+    const mainBtn = wrapper.createEl('button', { cls: 'note-gate-ai-btn' })
     mainBtn.textContent = '🤖'
     mainBtn.title = hasApiKey ? 'AI 분석 모달 열기 (텍스트 입력/편집)' : 'API 키 필요'
     if (!hasApiKey) {
@@ -249,7 +249,7 @@ export function createAIButton(
     }
 
     // 드롭다운 버튼
-    const dropdownBtn = wrapper.createEl('button', { cls: 'easy-gate-ai-dropdown-btn' })
+    const dropdownBtn = wrapper.createEl('button', { cls: 'note-gate-ai-dropdown-btn' })
     dropdownBtn.textContent = '▼'
     dropdownBtn.title = 'AI 분석 옵션 더보기'
     dropdownBtn.onclick = (e) => {
@@ -268,7 +268,7 @@ export function createAIStatusIndicator(
     provider: AIProviderType,
     hasApiKey: boolean
 ): HTMLElement {
-    const indicator = container.createSpan({ cls: 'easy-gate-ai-status' })
+    const indicator = container.createSpan({ cls: 'note-gate-ai-status' })
     const providerInfo = AI_PROVIDERS[provider]
 
     indicator.textContent = `${hasApiKey ? '🟢' : '🔴'} ${providerInfo.displayName}`
