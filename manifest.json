@@ -1,7 +1,7 @@
 {
 	"id": "note-gate",
 	"name": "Note Gate",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"minAppVersion": "0.15.0",
 	"description": "Embed websites in Obsidian with multi-tab support, AI text tools, and easy navigation.",
 	"author": "reallygood83",

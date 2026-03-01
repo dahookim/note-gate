@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Obsidian Open Gate is an Obsidian plugin that allows users to embed any website into Obsidian as a "Gate". The plugin creates custom views that can display web content either as sidebar panels or inline within notes.
+Obsidian Open Gate (also known as "note-gate") is an Obsidian plugin that allows users to embed any website into Obsidian as a "Gate". The plugin creates custom views that can display web content either as sidebar panels or inline within notes. It also includes AI-powered analysis and one-click web clipping features.
 
 ## Build & Development Commands
 
@@ -105,15 +105,28 @@ When a gate is added:
 ### File Organization
 
 - `src/main.ts`: Main plugin class and lifecycle
-- `src/GateView.ts`: Custom view implementation for rendering gates
+- `src/GateView.ts`: Custom view implementation for rendering gates (also hosts AI/Clipping toolbar)
 - `src/GateOptions.d.ts`: TypeScript definitions for gate configuration
-- `src/Modal*.ts`: Various modals for creating/editing/listing gates
+- `src/types.d.ts`: `PluginSetting` interface and default settings (includes AI + clipping settings)
+- `src/Modal*.ts` / `src/modals/`: Modals for creating/editing/listing gates, and AI analysis/processing
 - `src/SetingTab.ts`: Plugin settings UI
 - `src/fns/`: Pure functions (following functional programming principles)
   - `create*.ts`: Factory functions for creating UI elements
   - `register*.ts`: Functions for registering with Obsidian API
   - `setup*.ts`: Setup/initialization functions
   - Helper functions (normalize, fetch, open, unload)
+- `src/ai/`: AI provider abstraction layer
+  - `AIService.ts`: Unified service managing all AI providers
+  - `types.ts`: AI type definitions (`AISettings`, `AIProviderType`, `ClipData`, etc.)
+  - `providers/`: Individual provider implementations (Claude, Gemini, OpenAI, Grok, GLM, Custom)
+- `src/clipping/`: Web clipping feature
+  - `ClipService.ts`: Orchestrates content extraction, metadata parsing, and note generation
+  - `ContentExtractor.ts`: Extracts readable content from webview pages
+  - `MetadataParser.ts`: Parses page metadata (title, author, date, etc.)
+  - `NoteGenerator.ts`: Generates Obsidian notes from clipped content
+- `src/ui/`: Reusable UI components
+  - `AIDropdown.ts` / `ClipDropdown.ts`: Toolbar dropdowns in GateView
+  - `InlineProgress.ts`, `ToastNotification.ts`: Feedback components
 
 ### Functional Programming Approach
 
@@ -124,6 +137,14 @@ Per CONTRIBUTING.md, this codebase prefers pure functions that:
 
 Many functions in `src/fns/` are written as pure, reusable utilities.
 
+### AI & Clipping Integration
+
+The plugin embeds an AI toolbar directly into `GateView`:
+- **AI Analysis:** Users can analyze the current page with a selected prompt via `AIDropdown` → `AnalysisModal` or `MultiSourceAnalysisModal`
+- **Web Clipping:** One-click clipping via `ClipDropdown` → `ClipService` which extracts content using `ContentExtractor`, parses metadata, and saves to the vault via `NoteGenerator`
+- AI providers (Claude, Gemini, OpenAI, Grok, GLM, Custom) are configured in settings and accessed via `AIService.getCurrentProvider()`
+- `PluginSetting` now includes `ai: AISettings`, `clipping: ClippingSettings`, and `savedPrompts: SavedPrompt[]` fields
+
 ## Important Implementation Notes
 
 - **Never use npm** - always use `bun` for package management
@@ -133,3 +154,4 @@ Many functions in `src/fns/` are written as pure, reusable utilities.
 - **Webview partition:** The `profileKey` creates isolated sessions - different gates can have different cookies/storage
 - **Custom SVG icons:** Registered via `addIcon()` using the gate ID as the icon name
 - **Temp gate:** A special gate (`id: 'temp-gate'`) is registered for protocol handler use when opening URLs without existing gate config
+- **AI providers:** Each provider in `src/ai/providers/` extends `BaseProvider.ts`. Custom providers use `baseUrl`, `modelId`, and `apiKey` from `ClippingSettings.customApiModels`

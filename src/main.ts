@@ -12,7 +12,7 @@ import { isViewExist, openView } from './fns/openView'
 import { GateView } from './GateView'
 import { setupLinkConvertMenu } from './fns/setupLinkConvertMenu'
 import { setupInsertLinkMenu } from './fns/setupInsertLinkMenu'
-import { PluginSetting, DEFAULT_PLUGIN_SETTINGS } from './types'
+import { PluginSetting, DEFAULT_PLUGIN_SETTINGS, Bookmark } from './types'
 import { GateFrameOption, GateFrameOptionType } from './GateOptions'
 import { initializeAIService, updateAIServiceSettings } from './ai'
 import { DEFAULT_AI_SETTINGS, DEFAULT_CLIPPING_SETTINGS } from './ai/types'
@@ -20,6 +20,7 @@ import { DEFAULT_AI_SETTINGS, DEFAULT_CLIPPING_SETTINGS } from './ai/types'
 const DEFAULT_SETTINGS: PluginSetting = {
     uuid: '',
     gates: {},
+    bookmarks: [],
     ai: DEFAULT_AI_SETTINGS,
     clipping: DEFAULT_CLIPPING_SETTINGS,
     savedPrompts: []
@@ -193,6 +194,36 @@ export default class OpenGatePlugin extends Plugin {
         new Notice('This change will take effect after you reload Obsidian.')
     }
 
+    async addBookmark(bookmark: Bookmark): Promise<void> {
+        const existing = this.settings.bookmarks.find((b) => b.url === bookmark.url)
+        if (existing) {
+            new Notice(`Bookmark already exists: ${existing.title}`)
+            return
+        }
+        this.settings.bookmarks.push(bookmark)
+        await this.saveSettings()
+    }
+
+    async removeBookmark(bookmarkId: string): Promise<void> {
+        const index = this.settings.bookmarks.findIndex((b) => b.id === bookmarkId)
+        if (index === -1) {
+            new Notice('Bookmark not found')
+            return
+        }
+        this.settings.bookmarks.splice(index, 1)
+        await this.saveSettings()
+    }
+
+    async updateBookmark(bookmarkId: string, updates: Partial<Bookmark>): Promise<void> {
+        const bookmark = this.settings.bookmarks.find((b) => b.id === bookmarkId)
+        if (!bookmark) {
+            new Notice('Bookmark not found')
+            return
+        }
+        Object.assign(bookmark, updates)
+        await this.saveSettings()
+    }
+
     async loadSettings() {
         const loadedData = await this.loadData()
 
@@ -233,6 +264,11 @@ export default class OpenGatePlugin extends Plugin {
         // 저장된 프롬프트 초기화 (v2.0)
         if (!this.settings.savedPrompts) {
             this.settings.savedPrompts = []
+        }
+
+        // 즐겨찾기 초기화 (v2.1)
+        if (!this.settings.bookmarks) {
+            this.settings.bookmarks = []
         }
 
         // Gate 정규화

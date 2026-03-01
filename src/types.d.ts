@@ -8,9 +8,19 @@ import {
     DEFAULT_CLIPPING_SETTINGS
 } from './ai/types'
 
+export interface Bookmark {
+    id: string
+    title: string
+    url: string
+    icon?: string // lucide icon id OR favicon data URL
+}
+
 export interface PluginSetting {
     uuid: string
     gates: Record<string, GateFrameOption>
+
+    // 즐겨찾기 (v2.1)
+    bookmarks: Bookmark[]
 
     // AI 설정 (v2.0)
     ai: AISettings
@@ -25,6 +35,7 @@ export interface PluginSetting {
 export const DEFAULT_PLUGIN_SETTINGS: Partial<PluginSetting> = {
     uuid: '',
     gates: {},
+    bookmarks: [],
     ai: DEFAULT_AI_SETTINGS,
     clipping: DEFAULT_CLIPPING_SETTINGS,
     savedPrompts: []

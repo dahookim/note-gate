@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, Menu, Notice, MarkdownView, setIcon, ButtonComponent, TextComponent, DropdownComponent, TFile } from 'obsidian'
+import { ItemView, WorkspaceLeaf, Menu, Modal, Notice, MarkdownView, setIcon, ButtonComponent, TextComponent, DropdownComponent, TFile } from 'obsidian'
 import { createWebviewTag } from './fns/createWebviewTag'
 import { Platform } from 'obsidian'
 import { createIframe } from './fns/createIframe'
@@ -14,6 +14,8 @@ import { ClipService, initializeClipService, getClipService, ContentExtractor } 
 import { getAIService } from './ai'
 import { AnalysisModal, ProcessModal, MultiSourceAnalysisModal, AnalysisConfig } from './modals'
 import { ClipData, MultiSourceAnalysisRequest, SourceItem } from './ai/types'
+import { Bookmark } from './types'
+import { ModalNewTab } from './ModalNewTab'
 
 export class GateView extends ItemView {
     private readonly options: GateFrameOption
@@ -31,6 +33,9 @@ export class GateView extends ItemView {
     private clipDropdown: ClipDropdown | null = null
     private aiDropdown: AIDropdown | null = null
     private clipService: ClipService | null = null
+    // Bookmarks
+    private bookmarksBarEl: HTMLElement | null = null
+    private bookmarksVisible: boolean = true
 
     constructor(leaf: WorkspaceLeaf, options: GateFrameOption, plugin: OpenGatePlugin) {
         super(leaf)
@@ -1040,7 +1045,14 @@ ${sourceRefs}
         const tabBar = this.topBarEl.createDiv({ cls: 'gate-tab-bar' });
         this.renderTabBar(tabBar);
 
-        // 2. Control Row (Address + Actions)
+        // 2. Bookmarks Bar
+        this.bookmarksBarEl = this.topBarEl.createDiv({ cls: 'gate-bookmarks-bar' });
+        if (!this.bookmarksVisible) {
+            this.bookmarksBarEl.addClass('gate-bookmarks-bar--hidden');
+        }
+        this.renderBookmarksBar(this.bookmarksBarEl);
+
+        // 3. Control Row (Address + Actions)
         const controlRow = this.topBarEl.createDiv({ cls: 'gate-control-row' });
 
         // Navigation Buttons
@@ -1133,6 +1145,13 @@ ${sourceRefs}
                 )
             }
         }
+
+        // 🔖 Bookmarks Bar Toggle Button
+        controlRow.createSpan({ cls: 'gate-divider' });
+        new ButtonComponent(controlRow)
+            .setIcon('bookmark')
+            .setTooltip('Toggle Bookmarks Bar')
+            .onClick(() => this.toggleBookmarksBar());
     }
 
     private renderTabBar(container: HTMLElement) {
@@ -1173,6 +1192,184 @@ ${sourceRefs}
                 this.currentGateState.title = gate.title;
                 this.renderTabBar(container); // Re-render to update active state
             });
+        }
+
+        // '+' 새 탭 버튼
+        const addBtn = container.createDiv({ cls: 'gate-tab-add' });
+        setIcon(addBtn, 'plus');
+        addBtn.setAttribute('aria-label', 'New Tab');
+        addBtn.addEventListener('click', () => {
+            new ModalNewTab(
+                this.plugin.app,
+                this.plugin.settings.gates,
+                async (url: string) => {
+                    await this.handleAddressEnter(url);
+                },
+                (gate: GateFrameOption) => {
+                    this.navigateTo(gate.url);
+                    this.currentGateState.url = gate.url;
+                    this.currentGateState.id = gate.id;
+                    this.currentGateState.title = gate.title;
+                    this.renderTabBar(container);
+                }
+            ).open();
+        });
+    }
+
+    private renderBookmarksBar(container: HTMLElement): void {
+        container.empty();
+        const bookmarks = this.plugin.settings.bookmarks || [];
+
+        for (const bookmark of bookmarks) {
+            const btn = container.createDiv({ cls: 'gate-bookmark-item' });
+
+            const iconEl = btn.createSpan({ cls: 'gate-bookmark-icon' });
+            if (bookmark.icon && bookmark.icon.startsWith('data:')) {
+                const img = iconEl.createEl('img', { cls: 'gate-bookmark-favicon' }) as HTMLImageElement;
+                img.src = bookmark.icon;
+                img.width = 14;
+                img.height = 14;
+            } else {
+                setIcon(iconEl, 'globe');
+            }
+
+            btn.createSpan({ text: bookmark.title, cls: 'gate-bookmark-title' });
+
+            btn.addEventListener('click', () => {
+                this.navigateTo(bookmark.url);
+                this.currentGateState.url = bookmark.url;
+            });
+
+            btn.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                const menu = new Menu();
+                menu.addItem((item) => {
+                    item.setTitle('Edit Bookmark')
+                        .setIcon('pencil')
+                        .onClick(() => this.openEditBookmarkModal(bookmark));
+                });
+                menu.addItem((item) => {
+                    item.setTitle('Delete Bookmark')
+                        .setIcon('trash')
+                        .onClick(async () => {
+                            await this.plugin.removeBookmark(bookmark.id);
+                            if (this.bookmarksBarEl) {
+                                this.renderBookmarksBar(this.bookmarksBarEl);
+                            }
+                        });
+                });
+                menu.showAtPosition({ x: e.clientX, y: e.clientY });
+            });
+        }
+
+        // '+ Add Bookmark' button
+        const addBookmarkBtn = container.createDiv({ cls: 'gate-bookmark-add' });
+        setIcon(addBookmarkBtn, 'plus');
+        addBookmarkBtn.createSpan({ text: 'Add Bookmark' });
+        addBookmarkBtn.setAttribute('title', 'Bookmark current page');
+        addBookmarkBtn.addEventListener('click', async () => {
+            await this.addCurrentPageAsBookmark();
+        });
+    }
+
+    private async addCurrentPageAsBookmark(): Promise<void> {
+        const currentUrl = this.currentGateState.url;
+        if (!currentUrl || currentUrl === 'about:blank') {
+            new Notice('No page loaded to bookmark.');
+            return;
+        }
+
+        let title = this.currentGateState.title || '';
+        let faviconUrl: string | undefined;
+
+        if (!this.useIframe && this.isFrameReady) {
+            try {
+                const pageTitle = await (this.frame as WebviewTag).executeJavaScript('document.title');
+                if (pageTitle) title = pageTitle;
+            } catch (e) {
+                // fallback to currentGateState.title
+            }
+
+            try {
+                faviconUrl = await (this.frame as WebviewTag).executeJavaScript(`
+                    (function() {
+                        const link = document.querySelector("link[rel~='icon']");
+                        return link ? link.href : null;
+                    })()
+                `);
+            } catch (e) {
+                // no favicon
+            }
+        }
+
+        if (!title) {
+            try {
+                title = new URL(currentUrl).hostname;
+            } catch (e) {
+                title = currentUrl;
+            }
+        }
+
+        const bookmark: Bookmark = {
+            id: Math.random().toString(36).substring(2, 15),
+            title,
+            url: currentUrl,
+            icon: faviconUrl
+        };
+
+        await this.plugin.addBookmark(bookmark);
+
+        if (this.bookmarksBarEl) {
+            this.renderBookmarksBar(this.bookmarksBarEl);
+        }
+
+        new Notice(`Bookmarked: ${bookmark.title}`);
+    }
+
+    private openEditBookmarkModal(bookmark: Bookmark): void {
+        const modal = new Modal(this.plugin.app);
+        modal.titleEl.setText('Edit Bookmark');
+        const { contentEl } = modal;
+
+        contentEl.createEl('label', { text: 'Title' });
+        const titleInput = contentEl.createEl('input', {
+            type: 'text',
+            cls: 'gate-bookmark-edit-input'
+        }) as HTMLInputElement;
+        titleInput.value = bookmark.title;
+
+        contentEl.createEl('label', { text: 'URL' });
+        const urlInput = contentEl.createEl('input', {
+            type: 'text',
+            cls: 'gate-bookmark-edit-input'
+        }) as HTMLInputElement;
+        urlInput.value = bookmark.url;
+
+        const saveBtn = contentEl.createEl('button', { text: 'Save', cls: 'mod-cta' });
+        saveBtn.addEventListener('click', async () => {
+            const newTitle = titleInput.value.trim();
+            const newUrl = urlInput.value.trim();
+            if (!newTitle || !newUrl) return;
+
+            await this.plugin.updateBookmark(bookmark.id, { title: newTitle, url: newUrl });
+
+            if (this.bookmarksBarEl) {
+                this.renderBookmarksBar(this.bookmarksBarEl);
+            }
+            modal.close();
+        });
+
+        modal.open();
+    }
+
+    private toggleBookmarksBar(): void {
+        this.bookmarksVisible = !this.bookmarksVisible;
+        if (this.bookmarksBarEl) {
+            if (this.bookmarksVisible) {
+                this.bookmarksBarEl.removeClass('gate-bookmarks-bar--hidden');
+            } else {
+                this.bookmarksBarEl.addClass('gate-bookmarks-bar--hidden');
+            }
         }
     }
 

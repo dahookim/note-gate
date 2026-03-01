@@ -303,3 +303,163 @@ div[data-gate-id] .setting-item-name {
     height: 100%;
     border: none;
 }
+
+/* ===================== */
+/* New Tab '+' Button    */
+/* ===================== */
+.gate-tab-add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 8px;
+    cursor: pointer;
+    opacity: 0.5;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.gate-tab-add:hover {
+    opacity: 1;
+    background-color: var(--background-modifier-hover);
+}
+
+/* ===================== */
+/* Bookmarks Bar         */
+/* ===================== */
+.gate-bookmarks-bar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    background-color: var(--background-secondary);
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding: 2px 4px;
+    gap: 2px;
+    min-height: 26px;
+    scrollbar-width: none;
+}
+
+.gate-bookmarks-bar::-webkit-scrollbar {
+    display: none;
+}
+
+.gate-bookmarks-bar--hidden {
+    display: none;
+}
+
+.gate-bookmark-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    white-space: nowrap;
+    max-width: 160px;
+    flex-shrink: 0;
+    color: var(--text-normal);
+    transition: background 0.15s ease;
+    user-select: none;
+}
+
+.gate-bookmark-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.gate-bookmark-icon {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+}
+
+.gate-bookmark-favicon {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+}
+
+.gate-bookmark-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gate-bookmark-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    opacity: 0.5;
+    transition: all 0.15s ease;
+    margin-left: 4px;
+    color: var(--text-muted);
+}
+
+.gate-bookmark-add:hover {
+    opacity: 1;
+    background-color: var(--background-modifier-hover);
+}
+
+/* ===================== */
+/* New Tab Modal         */
+/* ===================== */
+.gate-new-tab-url-section {
+    margin-bottom: 12px;
+}
+
+.gate-new-tab-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.gate-new-tab-url-input {
+    flex: 1;
+    height: 30px;
+    font-size: 13px;
+    border-radius: 4px;
+    padding: 0 8px;
+}
+
+.gate-new-tab-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.gate-new-tab-hint {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin: 8px 0 4px;
+}
+
+.gate-new-tab-url-hint {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-left: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+}
+
+/* ======================== */
+/* Bookmark Edit Modal      */
+/* ======================== */
+.gate-bookmark-edit-input {
+    width: 100%;
+    margin-bottom: 10px;
+    height: 28px;
+    padding: 0 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    display: block;
+}
