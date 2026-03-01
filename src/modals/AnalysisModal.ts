@@ -654,9 +654,18 @@ export class AnalysisModal extends Modal {
         }
 
         const aiService = getAIService()
-        if (!aiService?.isProviderConfigured(this.selectedProvider)) {
+        // custom 프로바이더(Ollama 등)는 API 키 없이도 동작 가능하므로 별도 체크
+        if (this.selectedProvider !== 'custom' && !aiService?.isProviderConfigured(this.selectedProvider)) {
             showWarning(`${AI_PROVIDERS[this.selectedProvider].displayName} API 키가 설정되지 않았습니다.`)
             return
+        }
+        // custom 프로바이더인 경우 모델이 설정되어 있는지 확인
+        if (this.selectedProvider === 'custom') {
+            const customModels = this.settings.customApiModels || []
+            if (customModels.length === 0) {
+                showWarning('Settings에서 Custom API 모델(Ollama 등)을 먼저 추가해주세요.')
+                return
+            }
         }
 
         const config: AnalysisConfig = {

@@ -210,12 +210,13 @@ export class AIService {
         messages: AIMessage[],
         options?: AIRequestOptions
     ): Promise<AIProviderResponse> {
-        const provider = this.providers.get(providerId)
+        // getProvider()를 사용해야 custom 프로바이더도 올바르게 처리됨
+        const provider = this.getProvider(providerId)
         if (!provider) {
             return {
                 success: false,
                 content: '',
-                error: 'Provider not found'
+                error: `Provider not found: ${providerId}`
             }
         }
 

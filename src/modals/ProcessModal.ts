@@ -412,11 +412,15 @@ export class ProcessModal extends Modal {
 
             // 프롬프트 생성
             const prompt = this.buildPrompt()
+            if (!prompt.trim()) {
+                throw new Error('프롬프트를 생성할 수 없습니다. 템플릿 또는 커스텀 프롬프트를 확인해주세요.')
+            }
+
             this.state = 'processing'
             this.updateStatus()
             this.updateProgress(30)
 
-            // AI 호출
+            // AI 호출 - getProvider()를 통해 custom 포함 모든 프로바이더 지원
             this.updateProgress(50)
 
             const response = await aiService.generateTextWithProvider(
@@ -425,7 +429,16 @@ export class ProcessModal extends Modal {
                 { temperature: 0.7, maxTokens: 4000 }
             )
 
+            // 에러 응답 처리
+            if (!response.success) {
+                throw new Error(response.error || 'AI 응답 생성에 실패했습니다.')
+            }
+
             const fullContent = response.content
+            if (!fullContent || fullContent.trim() === '') {
+                throw new Error('AI가 빈 응답을 반환했습니다. 모델 설정을 확인해주세요.')
+            }
+
             this.resultContent = fullContent
             await this.updateResult(fullContent)
             this.updateProgress(90)

@@ -98,6 +98,7 @@ export class CustomProvider extends BaseProvider {
 
     /**
      * 텍스트 생성
+     * localhost 요청(Ollama 등)은 native fetch를 사용해 requestUrl 타임아웃 문제 방지
      */
     async generateText(
         messages: AIMessage[],
@@ -106,7 +107,6 @@ export class CustomProvider extends BaseProvider {
     ): Promise<AIProviderResponse> {
         const url = `${this.baseUrl}/chat/completions`
 
-        // We use the actual configured model ID rather than default
         const requestBody: CustomOpenAIRequest = {
             model: this.actualModelId,
             messages: messages.map((msg) => ({
@@ -121,18 +121,35 @@ export class CustomProvider extends BaseProvider {
         const headers: Record<string, string> = {
             'Content-Type': 'application/json'
         }
-        const token = apiKey || this.actualApiKey;
+        const token = apiKey || this.actualApiKey
         if (token) {
             headers['Authorization'] = `Bearer ${token}`
         }
 
         try {
-            const response = await this.makeRequest<CustomOpenAIResponse>(url, {
-                url,
-                method: 'POST',
-                headers,
-                body: JSON.stringify(requestBody)
-            })
+            let response: CustomOpenAIResponse
+
+            // localhost/127.0.0.1 요청은 native fetch 사용 (requestUrl이 로컬 서버 연결에 실패하는 문제 우회)
+            const isLocal = this.baseUrl.includes('localhost') || this.baseUrl.includes('127.0.0.1') || this.baseUrl.includes('0.0.0.0')
+            if (isLocal) {
+                const fetchResponse = await fetch(url, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(requestBody)
+                })
+                if (!fetchResponse.ok) {
+                    const errorText = await fetchResponse.text()
+                    throw new Error(`HTTP ${fetchResponse.status}: ${errorText}`)
+                }
+                response = await fetchResponse.json() as CustomOpenAIResponse
+            } else {
+                response = await this.makeRequest<CustomOpenAIResponse>(url, {
+                    url,
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(requestBody)
+                })
+            }
 
             if (response.error) {
                 return {
